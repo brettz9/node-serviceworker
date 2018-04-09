@@ -4,6 +4,8 @@
   "description": "Environment for running serviceworkers in node.js, as 'isomorphic' request handlers for clients without SW support.",
   "main": "lib/index.js",
   "scripts": {
+    "start": "static -p 8000",
+    "eslint": "eslint .",
     "test": "mocha --ui exports --no-timeouts test/index.js"
   },
   "repository": {
@@ -16,18 +18,32 @@
     "isomorphic"
   ],
   "author": "Gabriel Wicke <gwicke@wikimedia.org>",
+  "contributors": [
+    "Brett Zamir"
+  ],
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 4.2"
+  },
   "bugs": {
     "url": "https://github.com/gwicke/node-serviceworker/issues"
   },
+  "homepage": "https://github.com/gwicke/node-serviceworker",
   "dependencies": {
-    "bluebird": "^2.10.2",
+    "bluebird": "^3.5.1",
     "dom-urls": "^1.1.0",
-    "fake-indexeddb": "^1.0.8",
+    "fake-indexeddb": "^2.0.4",
     "node-fetch-polyfill": "^2.0.6",
     "node-web-streams": "^0.2.2"
   },
   "devDependencies": {
-    "mocha": "^2.3.3"
+    "eslint": "4.19.1",
+    "eslint-config-standard": "11.0.0",
+    "eslint-plugin-import": "2.10.0",
+    "eslint-plugin-node": "6.0.1",
+    "eslint-plugin-promise": "3.7.0",
+    "eslint-plugin-standard": "3.0.1",
+    "mocha": "^5.0.5",
+    "node-static": "^0.7.10"
   }
 }
