@@ -8,38 +8,32 @@ self.addEventListener('install', event => {
     // console.log('installing...', event);
     // Perform install steps
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => fetch(tplURL, {credentials: 'include'})
-                .then(res => res.text())
-                .then(tplSrc => {
-                    const tpl = replaceContent(tplSrc, '');
-                    return cache.put(tplURL, new Response(tpl));
-                })));
+        (async () => {
+            const cache = await caches.open(CACHE_NAME);
+            const res = await fetch(tplURL, {credentials: 'include'});
+            const tplSrc = await res.text();
+            const tpl = replaceContent(tplSrc, '');
+            return cache.put(tplURL, new Response(tpl));
+        })()
+    );
 });
 
-function fetchBody (req, title) {
-    return caches.open(CACHE_NAME)
-        .then(cache =>
-            cache.match(req)
-                .then(cacheRes => {
-                    if (cacheRes) {
-                        return cacheRes.text();
-                    }
-                    const protoHost = req.url.match(/^(https?:\/\/[^/]+)\//)[1];
-                    return fetch(protoHost + '/api/rest_v1/page/html/' + title)
-                        .then(res => {
-                            cache.put(req.url, res.clone());
-                            return res.text();
-                        });
-                }));
+async function fetchBody (req, title) {
+    const cache = await caches.open(CACHE_NAME);
+    const cacheRes = await cache.match(req);
+    if (cacheRes) {
+        return cacheRes.text();
+    }
+    const protoHost = req.url.match(/^(https?:\/\/[^/]+)\//)[1];
+    const res = await fetch(protoHost + '/api/rest_v1/page/html/' + title);
+    cache.put(req.url, res.clone());
+    return res.text();
 }
 
-function getTemplate () {
-    return caches.open(CACHE_NAME)
-        .then((cache) => {
-            return cache.match(new Request(tplURL))
-                .then(resp => resp.text());
-        });
+async function getTemplate () {
+    const cache = await caches.open(CACHE_NAME);
+    const resp = await cache.match(new Request(tplURL));
+    return resp.text();
 }
 
 function cheapBodyInnerHTML (html) {
@@ -79,23 +73,25 @@ function injectBody (tpl, body, req, title) {
     return replaceContent(tpl, cheapBodyInnerHTML(body));
 }
 
-function assemblePage (req) {
+async function assemblePage (req) {
     const title = req.url.match(/en\.wikipedia\.org\/([^?]+)$/)[1];
-    return Promise.all([getTemplate(), fetchBody(req, title)])
-        .then(([tpl, body]) => injectBody(tpl, body, req, title));
+    const [tpl, body] = await Promise.all([getTemplate(), fetchBody(req, title)]);
+    return injectBody(tpl, body, req, title);
 }
 
 self.addEventListener('fetch', event => {
     if (/en\.wikipedia\.org\/[^?]+$/.test(event.request.url)) {
         // console.log('fetching', event.request.url);
         return event.respondWith(
-            // Ideally, we'd start to stream the header right away here.
-            assemblePage(event.request)
-                .then(body => new Response(body, {
+            (async () => {
+                // Ideally, we'd start to stream the header right away here.
+                const body = await assemblePage(event.request);
+                return new Response(body, {
                     headers: {
                         'content-type': 'text/html;charset=utf-8'
                     }
-                }))
+                });
+            })()
         );
     }
 });
